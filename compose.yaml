@@ -44,7 +44,7 @@ services:
       - postgresql_data:/var/lib/postgresql/data
       - ./postgres/scripts:/docker-entrypoint-initdb.d
     healthcheck:
-      test: "pg_isready -U postgres -d ragdb"
+      test: "pg_isready -U postgres_user -d users"
       interval: 2s
       timeout: 20s
       start_period: 10s
