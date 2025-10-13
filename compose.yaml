@@ -1,0 +1,56 @@
+services:
+  redis:
+    image: redis:${REDIS_VERSION}
+    container_name: user_redis
+    ports:
+      - "6379:6379"
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user_service
+    ports:
+      - "80:80"
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    restart: no
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      - user-postgresql
+
+  user-postgresql:
+    image: postgres:${POSTGRES_VERSION}
+    container_name: user_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_DB: ${SPRING_DATASOURCE_DB}
+      PGPASSWORD: ${PGPASSWORD}
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+      - ./postgres/scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: "pg_isready -U postgres -d ragdb"
+      interval: 2s
+      timeout: 20s
+      start_period: 10s
+      retries: 10
+
+volumes:
+  postgresql_data:
+
+
