@@ -3,7 +3,9 @@ services:
     image: redis:${REDIS_VERSION}
     container_name: user_redis
     ports:
-      - "6379:6379"
+      - ${REDIS_EXTERNAL_PORT}:6379
+    networks:
+      - user-service-network
 
   user-service:
     build:
@@ -11,19 +13,16 @@ services:
       dockerfile: Dockerfile
     container_name: user_service
     ports:
-      - "80:80"
+      - ${APP_EXTERNAL_PORT}:8080
     environment:
-      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - SPRING_DATASOURCE_URL=${DOCKER_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${DOCKER_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DOCKER_DATASOURCE_PASSWORD}
     restart: no
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     depends_on:
       - user-postgresql
+    networks:
+      - user-service-network
 
   user-postgresql:
     image: postgres:${POSTGRES_VERSION}
@@ -39,7 +38,7 @@ services:
         max-size: 10m
         max-file: "3"
     ports:
-      - "5432:5432"
+      - ${POSTGRES_EXTERNAL_PORT}:5432
     volumes:
       - postgresql_data:/var/lib/postgresql/data
       - ./postgres/scripts:/docker-entrypoint-initdb.d
@@ -49,8 +48,14 @@ services:
       timeout: 20s
       start_period: 10s
       retries: 10
+    networks:
+      - user-service-network
 
 volumes:
   postgresql_data:
+
+networks:
+  user-service-network:
+    driver: bridge
 
 
