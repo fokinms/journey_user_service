@@ -1,5 +1,5 @@
 services:
-  redis:
+  user-redis:
     image: redis:${REDIS_VERSION}
     container_name: user_redis
     ports:
